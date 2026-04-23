@@ -17,5 +17,13 @@ xcuserdata/
 # Built application bundle — produced locally by build-app.sh
 PixelVeil.app/
 
+# DMG + staging output
+dist/
+*.dmg
+
+# Local tokens (never commit)
+token-pixel.txt
+token-pixel.rtf
+
 # Assistant memory — private notes, not source
 memory/

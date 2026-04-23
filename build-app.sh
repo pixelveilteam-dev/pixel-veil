@@ -52,6 +52,28 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-codesign --force --sign - "$APP" >/dev/null 2>&1 || true
+# Sign the app. Without an Apple Developer ID ($99/yr) we can't produce a
+# Gatekeeper-accepted signature, but an ad-hoc signature with the hardened
+# runtime is still the strongest thing possible from Command Line Tools —
+# it prevents dylib injection, disables most sandbox escapes, and lets the
+# bundle pass the first round of Gatekeeper checks. Users still need to do a
+# one-time right-click → Open on first launch (instructions in INSTALL.md).
+if [ -f PixelVeil.entitlements ]; then
+    ENT="--entitlements PixelVeil.entitlements"
+elif [ -f PixelVeil/Resources/PixelVeil.entitlements ]; then
+    ENT="--entitlements PixelVeil/Resources/PixelVeil.entitlements"
+else
+    ENT=""
+fi
+codesign --force --deep \
+    --sign - \
+    --options runtime \
+    --timestamp=none \
+    $ENT \
+    "$APP" >/dev/null 2>&1 || true
+
+# Verify: strict validation. If this fails the app will fail to launch on
+# locked-down systems — worth flagging even if we continue.
+codesign --verify --strict "$APP" 2>&1 | head -5 || true
 
 echo "Done: $PWD/$APP"
