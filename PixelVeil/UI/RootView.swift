@@ -14,6 +14,7 @@ struct RootView: View {
     @State private var section: SidebarSection = .overview
     @State private var showFirstRun: Bool = !FirstRun.done
     @EnvironmentObject var settings: SettingsStore
+    @EnvironmentObject var updateChecker: UpdateChecker
 
     var body: some View {
         NavigationSplitView {
@@ -25,6 +26,9 @@ struct RootView: View {
                     .ignoresSafeArea()
                 VStack(spacing: 0) {
                     TitleBar(title: titleFor(section))
+                    if updateChecker.updateAvailable && !updateChecker.dismissed {
+                        UpdateBanner(checker: updateChecker)
+                    }
                     ScrollView {
                         Group {
                             switch section {

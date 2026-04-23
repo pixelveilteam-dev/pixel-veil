@@ -16,7 +16,7 @@ struct AboutView: View {
             VStack(spacing: 4) {
                 Text("Pixel Veil")
                     .font(.system(size: 22, weight: .semibold))
-                Text("Version 1.0.0")
+                Text("Version \(AppInfo.version)")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }

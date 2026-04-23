@@ -91,7 +91,7 @@ private struct AppHeader: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Pixel Veil")
                     .font(.system(size: 14, weight: .semibold))
-                Text("Version 1.0.0")
+                Text("Version \(AppInfo.version)")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }

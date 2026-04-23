@@ -24,6 +24,7 @@ struct PixelVeilApp: App {
                 .environmentObject(appDelegate.hotkeyManager)
                 .environmentObject(appDelegate.appRuleEngine)
                 .environmentObject(appDelegate.scheduleEngine)
+                .environmentObject(appDelegate.updateChecker)
                 .frame(minWidth: 980, minHeight: 680)
         }
         .windowStyle(.hiddenTitleBar)

@@ -6,6 +6,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-04-23
+
+### Fixed
+- UI no longer hardcodes "Version 1.0.0". The sidebar header, About page,
+  and anywhere else the version appears now read `CFBundleShortVersionString`
+  from Info.plist via a new `AppInfo.version` helper, so future DMGs show
+  the correct version in the chrome automatically.
+
+### Added
+- `UpdateChecker` service polls `https://api.github.com/repos/pixelveilteam-dev/pixel-veil/releases/latest`
+  on launch and every 6 hours thereafter, compares the tag against the
+  running bundle with a tuple-wise semver compare, and publishes
+  `updateAvailable`.
+- New `UpdateBanner` appears at the top of the main window when a newer
+  release is available, with a one-click "View update" button that opens
+  the release page in the browser. Dismissible per-launch.
+
 ## [1.0.1] — 2026-04-23
 
 ### Changed

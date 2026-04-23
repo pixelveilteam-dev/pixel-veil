@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let appRuleEngine      = AppRuleEngine()
     let scheduleEngine     = ScheduleEngine()
     let brightnessController = BrightnessController()
+    let updateChecker        = UpdateChecker()
     lazy var overlayController = OverlayController(settings: settings,
                                                    displayManager: displayManager)
     private var menuBarController: MenuBarController?
@@ -49,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
         displayManager.start()
         permissionsManager.refresh()
+        updateChecker.start()
 
         // Bind services to the shared settings store.
         overlayController.appRuleEngine = appRuleEngine

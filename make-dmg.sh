@@ -85,7 +85,14 @@ OSAEOF
 # Let Finder flush its state.
 sleep 2
 sync
-hdiutil detach "$MOUNT_DIR" >/dev/null || hdiutil detach "$MOUNT_DIR" -force >/dev/null
+# Spotlight / Finder briefly hold the volume after Finder closes. Retry the
+# detach with increasing backoff before giving up.
+for attempt in 1 2 3 4 5 6; do
+    if hdiutil detach "$MOUNT_DIR" -force >/dev/null 2>&1; then
+        break
+    fi
+    sleep $((attempt * 2))
+done
 
 # 6. Convert to compressed read-only DMG.
 echo "[6/6] Converting to compressed DMG…"
