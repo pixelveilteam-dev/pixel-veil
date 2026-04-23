@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- The overlay window needs to be a regular app window, not a sandbox-scoped
+         one. Disabling the sandbox keeps the screen-saver-level NSWindow working
+         across Spaces and on top of full-screen apps; re-enabling it is possible
+         but constrains hotkey registration and workspace observation. -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+</dict>
+</plist>

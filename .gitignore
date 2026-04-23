@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode (in case anyone opens the project in Xcode later)
+xcuserdata/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+
+# Built application bundle — produced locally by build-app.sh
+PixelVeil.app/
+
+# Downloaded / user-supplied assets that aren't source
+*.icns
+
+# Assistant memory — private notes, not source
+memory/
