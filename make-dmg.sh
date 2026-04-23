@@ -7,7 +7,8 @@
 set -eo pipefail
 cd "$(dirname "$0")"
 
-VERSION="1.0.0"
+VERSION="$(cat VERSION 2>/dev/null | tr -d '[:space:]')"
+: "${VERSION:=1.0.0}"
 DIST="dist"
 DMG_NAME="PixelVeil-${VERSION}"
 VOL_NAME="Pixel Veil"

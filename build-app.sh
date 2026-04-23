@@ -5,7 +5,12 @@ set -eo pipefail
 
 cd "$(dirname "$0")"
 
-echo "Building release..."
+# Single source of truth for the version string. Edit VERSION and everything
+# downstream (Info.plist, DMG name, release tag) picks it up.
+VERSION="$(cat VERSION 2>/dev/null | tr -d '[:space:]')"
+: "${VERSION:=1.0.0}"
+
+echo "Building release v${VERSION}..."
 swift build -c release
 
 APP="PixelVeil.app"
@@ -40,8 +45,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
     <key>CFBundleName</key><string>Pixel Veil</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.0.0</string>
-    <key>CFBundleVersion</key><string>1</string>
+    <key>CFBundleShortVersionString</key><string>__VERSION__</string>
+    <key>CFBundleVersion</key><string>__VERSION__</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
     <key>LSUIElement</key><false/>
@@ -51,6 +56,9 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </dict>
 </plist>
 PLIST
+
+# Substitute the version placeholders we just wrote.
+sed -i '' "s/__VERSION__/${VERSION}/g" "$APP/Contents/Info.plist"
 
 # Sign the app. Without an Apple Developer ID ($99/yr) we can't produce a
 # Gatekeeper-accepted signature, but an ad-hoc signature with the hardened
