@@ -19,10 +19,12 @@ mkdir -p "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/PixelVeil"
 chmod +x "$APP/Contents/MacOS/PixelVeil"
 
-# Ship the logo PNGs inside the bundle so AppImages.swift can load them with
-# Bundle.main. Using PNGs avoids needing Xcode's asset-catalog compilation.
+# Ship the logo PNGs + onboarding illustrations + app icon inside the bundle
+# so AppImages.swift can load them with Bundle.main. Using PNGs + a raw
+# .icns avoids needing Xcode's asset-catalog compilation.
 if [ -d "PixelVeil/Resources/Images" ]; then
     cp PixelVeil/Resources/Images/*.png "$APP/Contents/Resources/" 2>/dev/null || true
+    cp PixelVeil/Resources/Images/AppIcon.icns "$APP/Contents/Resources/" 2>/dev/null || true
 fi
 
 cat > "$APP/Contents/Info.plist" <<'PLIST'
@@ -33,6 +35,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleDevelopmentRegion</key><string>en</string>
     <key>CFBundleDisplayName</key><string>Pixel Veil</string>
     <key>CFBundleExecutable</key><string>PixelVeil</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundleIdentifier</key><string>com.pixelveil.app</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
     <key>CFBundleName</key><string>Pixel Veil</string>

@@ -12,9 +12,8 @@ import AppKit
 import SwiftUI
 
 final class MenuBarController: NSObject {
-    // `variableLength` lets the status item match the natural aspect of our
-    // icon — squareLength would force a 1:1 box and vertically squash the
-    // wider-than-tall monitor+shield silhouette.
+    // Variable length so the status item matches the mark's natural aspect
+    // (wider than tall) without squashing.
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
     private let settings: SettingsStore
@@ -35,7 +34,7 @@ final class MenuBarController: NSObject {
 
     func install() {
         if let button = statusItem.button {
-            button.image = AppImages.menuBarSilhouette(height: 18, withBadge: false)
+            button.image = AppImages.menuBarIcon(height: 18, withBadge: false)
             button.imagePosition = .imageOnly
             button.target = self
             button.action = #selector(toggle(_:))
@@ -61,10 +60,7 @@ final class MenuBarController: NSObject {
 
     func setActive(_ active: Bool) {
         guard let button = statusItem.button else { return }
-        // Both states are template NSImages (black silhouette + alpha) so
-        // AppKit handles light/dark menu bar tinting for us. Active adds a
-        // small filled badge dot so the state is unambiguous.
-        button.image = AppImages.menuBarSilhouette(height: 18, withBadge: active)
+        button.image = AppImages.menuBarIcon(height: 18, withBadge: active)
     }
 
     @objc private func toggle(_ sender: Any?) {
@@ -80,6 +76,55 @@ final class MenuBarController: NSObject {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }
+    }
+
+    // MARK: Glyph
+
+    /// The menu-bar icon — a 3×3 grid template. Active = filled squares + a
+    /// small badge dot in the upper-right; Inactive = hollow outlines only.
+    /// Both states are template images so AppKit tints them to match the
+    /// menu bar in light/dark appearance.
+    private static func glyph(active: Bool) -> NSImage {
+        let size = NSSize(width: 18, height: 18)
+        let img = NSImage(size: size, flipped: false) { rect in
+            guard let ctx = NSGraphicsContext.current?.cgContext else { return false }
+            let cell: CGFloat = 3
+            let gap: CGFloat = 1
+            let totalSide = cell * 3 + gap * 2
+            let startX = (rect.width  - totalSide) / 2
+            let startY = (rect.height - totalSide) / 2
+
+            ctx.setFillColor(NSColor.labelColor.cgColor)
+            ctx.setStrokeColor(NSColor.labelColor.cgColor)
+
+            if active {
+                for r in 0..<3 {
+                    for c in 0..<3 {
+                        let x = startX + CGFloat(c) * (cell + gap)
+                        let y = startY + CGFloat(r) * (cell + gap)
+                        ctx.fill(CGRect(x: x, y: y, width: cell, height: cell))
+                    }
+                }
+                let dotR: CGFloat = 2.3
+                let dotX = rect.width  - dotR * 2 - 0.5
+                let dotY = rect.height - dotR * 2 - 0.5
+                ctx.fillEllipse(in: CGRect(x: dotX, y: dotY,
+                                           width: dotR * 2, height: dotR * 2))
+            } else {
+                ctx.setLineWidth(1)
+                for r in 0..<3 {
+                    for c in 0..<3 {
+                        let x = startX + CGFloat(c) * (cell + gap) + 0.5
+                        let y = startY + CGFloat(r) * (cell + gap) + 0.5
+                        ctx.stroke(CGRect(x: x, y: y,
+                                          width: cell - 1, height: cell - 1))
+                    }
+                }
+            }
+            return true
+        }
+        img.isTemplate = true
+        return img
     }
 
     private func openMainWindow() {

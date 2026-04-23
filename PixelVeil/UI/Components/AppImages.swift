@@ -31,14 +31,23 @@ enum AppImages {
     /// Just the monitor + shield glyph, wordmark cropped out. Ideal for any
     /// context where we already show the name "Pixel Veil" as text, so we
     /// avoid drawing the wordmark twice.
+    ///
+    /// Prefers the standalone `logo-mark.png` (no text, square canvas) if
+    /// present. Falls back to cropping the wordmark off the composed logo
+    /// for older bundles where only the full logo was shipped.
     static let markOnly: NSImage = {
+        if let img = load("logo-mark") { return img }
         let source = withText
         guard source.size.width > 0 else { return source }
-        // Both logos use ~62 % of the vertical canvas for the glyph; we trim
-        // a touch more (64 %) to shed the breathing room above the wordmark.
-        let cropFrac: CGFloat = 0.64
-        return cropTop(source, fraction: cropFrac)
+        return cropTop(source, fraction: 0.64)
     }()
+
+    /// Illustration for the First-Run welcome screen — shows the "what side
+    /// viewers see" concept. Optional asset; absent bundles show nothing.
+    static let onboardingWelcome: NSImage? = load("onboard-welcome")
+
+    /// Illustration for the First-Run "How it works" screen — component flow.
+    static let onboardingHow: NSImage? = load("onboard-how")
 
     /// Loads a PNG from the app bundle's Resources folder.
     private static func load(_ name: String) -> NSImage? {
@@ -47,15 +56,46 @@ enum AppImages {
         return image
     }
 
-    /// A monochrome silhouette of the mark, suitable for use as an NSImage
-    /// template in the menu bar. We take the shape from the transparent
-    /// logo's alpha channel and fill it solid black; marking the NSImage as
-    /// template makes AppKit tint it to match the menu bar appearance in
-    /// both light and dark mode — no need for separate assets.
+    /// Full-colour version of the mark sized for the menu bar. We do NOT flag
+    /// it as a template image — the user prefers the natural purple/black
+    /// palette to appear literally, instead of being flattened to monochrome
+    /// by AppKit's template tinting. Active state overlays a small filled
+    /// badge dot in the upper-right corner.
     ///
-    /// The output canvas matches the source's aspect ratio so the
-    /// monitor+shield doesn't get squashed. Paired with NSStatusItem's
-    /// `variableLength` the status item resizes to fit.
+    /// Output aspect matches the source so the monitor+shield never squashes;
+    /// pair with NSStatusItem's `variableLength` so the bar makes room.
+    static func menuBarIcon(height: CGFloat = 18, withBadge: Bool = false) -> NSImage {
+        let source = markOnly
+        let srcSize = source.size
+        let aspect: CGFloat = srcSize.height > 0 ? (srcSize.width / srcSize.height) : 1.0
+        let target = NSSize(width: max(height, height * aspect), height: height)
+
+        let img = NSImage(size: target, flipped: false) { _ in
+            guard let ctx = NSGraphicsContext.current?.cgContext,
+                  let cg = source.cgImage(forProposedRect: nil,
+                                          context: NSGraphicsContext.current,
+                                          hints: nil)
+            else { return false }
+            // Draw the logo as-is with its real colours.
+            ctx.draw(cg, in: CGRect(origin: .zero, size: target))
+
+            if withBadge {
+                let dotR: CGFloat = max(1.8, height * 0.18)
+                let dotX = target.width  - dotR * 2
+                let dotY = target.height - dotR * 2
+                ctx.setFillColor(NSColor.systemPurple.cgColor)
+                ctx.fillEllipse(in: CGRect(x: dotX, y: dotY,
+                                           width: dotR * 2, height: dotR * 2))
+            }
+            return true
+        }
+        // NOT a template — we want the mark's own colours to show.
+        img.isTemplate = false
+        return img
+    }
+
+    /// Legacy monochrome silhouette. Kept around for callers that want a
+    /// template-tinted variant; current menu bar uses `menuBarIcon` instead.
     static func menuBarSilhouette(height: CGFloat = 18, withBadge: Bool = false) -> NSImage {
         let source = markOnly
         let srcSize = source.size

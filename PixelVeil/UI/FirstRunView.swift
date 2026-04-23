@@ -73,8 +73,15 @@ struct FirstRunView: View {
 
     private var welcome: some View {
         VStack(spacing: 18) {
-            AppIconView(size: 120, cornerRadius: 26)
-                .shadow(color: .black.opacity(0.18), radius: 10, y: 5)
+            if let illustration = AppImages.onboardingWelcome {
+                Image(nsImage: illustration)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 180)
+            } else {
+                AppIconView(size: 120, cornerRadius: 26)
+                    .shadow(color: .black.opacity(0.18), radius: 10, y: 5)
+            }
 
             Text("Welcome to Pixel Veil")
                 .font(.system(size: 26, weight: .semibold))
@@ -91,8 +98,17 @@ struct FirstRunView: View {
 
     private var howItWorks: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("How it works")
-                .font(.system(size: 22, weight: .semibold))
+            HStack(alignment: .top, spacing: 18) {
+                Text("How it works")
+                    .font(.system(size: 22, weight: .semibold))
+                Spacer()
+                if let illustration = AppImages.onboardingHow {
+                    Image(nsImage: illustration)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 180)
+                }
+            }
 
             featureRow(icon: "eye.slash",
                        title: "Contrast-reduction veil",
