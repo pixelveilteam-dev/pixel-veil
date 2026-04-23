@@ -228,7 +228,6 @@ cd /Users/28atotten/PixelVeil    # or pixel-veil-website
 git -c credential.helper= push \
     "https://x-access-token:${PAT}@github.com/pixelveilteam-dev/pixel-veil.git" main:main
 unset PAT
-rm -f /Users/28atotten/PixelVeil/token-pixel.txt
 ```
 
 Points:
@@ -237,18 +236,21 @@ Points:
 - Token lives inline in the URL for *this command only* — `git remote -v`
   should still show the clean URL (no embedded token) after.
 - `x-access-token` as the username is the GitHub convention for PATs.
-- Immediately delete `token-pixel.txt` after success.
 
-### User's token workflow
+### Token file lifecycle (updated 2026-04-23)
 
-The user re-saves the PAT to `/Users/28atotten/PixelVeil/token-pixel.txt`
-(plain text) whenever a push is needed. They explicitly told me to always
-delete the file after a successful push, and to remind them to rotate the
-PAT when it's seen chat/disk exposure.
+The user keeps `/Users/28atotten/PixelVeil/token-pixel.txt` around between
+pushes. **Do NOT auto-delete it** after every push. Rotate (delete locally
++ revoke + re-issue on GitHub) only:
+- every ~10 pushes, as a hygiene rhythm
+- or immediately if the raw token string has leaked to a chat transcript,
+  a log, or any committed file
+- or when the user explicitly asks
 
-If TextEdit is used: user needs to convert to plain text first
-(`Format → Make Plain Text`) or the file is an RTF with formatting — use
-`textutil -convert txt -stdout FILE.rtf` to extract the real string.
+If TextEdit was used to save the file: user needs to convert to plain
+text first (`Format → Make Plain Text`) or the file is an RTF with
+formatting — use `textutil -convert txt -stdout FILE.rtf` to extract the
+real string.
 
 ### What pushes go to
 

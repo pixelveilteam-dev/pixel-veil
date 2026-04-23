@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-04-23
+
+### Changed
+- AppIcon now composites the Pixel Veil mark onto a rounded-square purple
+  gradient canvas (Apple superellipse at 0.223 × side, 10 % safe-area
+  inset, glassy top highlight, inner rim). The bare transparent mark
+  looked out-of-place next to Apple's own icons in the Dock; this matches
+  the macOS 11 + design language.
+- `tools/make-app-icon.swift` generates the 1024 × 1024 source PNG from
+  the standalone mark; ICNS is rebuilt from it.
+
 ## [1.0.0] — 2026-04-23
 
 Initial public release.
