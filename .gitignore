@@ -17,8 +17,5 @@ xcuserdata/
 # Built application bundle — produced locally by build-app.sh
 PixelVeil.app/
 
-# Downloaded / user-supplied assets that aren't source
-*.icns
-
 # Assistant memory — private notes, not source
 memory/
