@@ -20,15 +20,18 @@ final class MenuBarController: NSObject {
     private let overlayController: OverlayController
     private let permissionsManager: PermissionsManager
     private let hotkeyManager: HotkeyManager
+    private let showMainWindow: () -> Void
 
     init(settings: SettingsStore,
          overlayController: OverlayController,
          permissionsManager: PermissionsManager,
-         hotkeyManager: HotkeyManager) {
+         hotkeyManager: HotkeyManager,
+         showMainWindow: @escaping () -> Void) {
         self.settings = settings
         self.overlayController = overlayController
         self.permissionsManager = permissionsManager
         self.hotkeyManager = hotkeyManager
+        self.showMainWindow = showMainWindow
         super.init()
     }
 
@@ -129,14 +132,7 @@ final class MenuBarController: NSObject {
 
     private func openMainWindow() {
         popover.performClose(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        // Find or recreate the main window.
-        if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "pixel-veil-main" }) {
-            window.makeKeyAndOrderFront(nil)
-        } else {
-            // SwiftUI will re-create on activation via the `Window` scene.
-            NSApp.sendAction(#selector(NSApplication.runPageLayout(_:)), to: nil, from: nil)
-        }
+        showMainWindow()
     }
 
     // MARK: Glyph

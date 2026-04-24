@@ -41,13 +41,15 @@ final class OverlayController: ObservableObject {
     /// observing settings.
     @Published private(set) var isActive: Bool = false
 
-    // displayID -> (window, metal view)
-    private var windows: [UInt32: (OverlayWindow, MetalPatternView)] = [:]
+    // overlay key -> (window, metal view)
+    private var windows: [String: (OverlayWindow, MetalPatternView)] = [:]
     private var bag = Set<AnyCancellable>()
     private var spaceObserver: NSObjectProtocol?
+    private var targetedSyncTimer: Timer?
     private var isSyncing = false
 
-    init(settings: SettingsStore, displayManager: DisplayManager) {
+    init(settings: SettingsStore,
+         displayManager: DisplayManager) {
         self.settings = settings
         self.displayManager = displayManager
     }
@@ -141,6 +143,7 @@ final class OverlayController: ObservableObject {
         }
         windows.removeAll()
         isRenderingAny = false
+        stopTargetedSyncTimer()
     }
 
     // MARK: Effective-state resolution
@@ -164,10 +167,24 @@ final class OverlayController: ObservableObject {
 
         let screens = displayManager.screens
         let globallyOn = effectiveEnabled
+        let targetedRule = appRuleEngine?.activeRule?.limitToAppWindows == true
+            ? appRuleEngine?.activeRule
+            : nil
+
+        if let targetedRule = targetedRule, globallyOn {
+            syncTargetedWindows(rule: targetedRule, screens: screens)
+            startTargetedSyncTimer()
+            return
+        }
+
+        stopTargetedSyncTimer()
 
         // Add/update one overlay per active screen.
+        var liveKeys = Set<String>()
         for screen in screens {
             let displayID = DisplayManager.displayID(for: screen) ?? 0
+            let key = "display-\(displayID)"
+            liveKeys.insert(key)
             let perDisplay = settings.settings(for: displayID)
             let enabledForDisplay = perDisplay?.enabled ?? true
             let shouldShow = globallyOn && enabledForDisplay
@@ -183,7 +200,7 @@ final class OverlayController: ObservableObject {
             let pattern  = perDisplay?.patternOverride  ?? appPattern  ?? settings.pattern
 
             if shouldShow {
-                let pair = windows[displayID] ?? makeWindow(for: screen, id: displayID)
+                let pair = windows[key] ?? makeWindow(for: screen)
                 pair.1.update(strength: strength,
                               density: settings.density,
                               pattern: pattern)
@@ -191,28 +208,55 @@ final class OverlayController: ObservableObject {
                 if !pair.0.isVisible {
                     pair.0.orderFrontRegardless()
                 }
-                windows[displayID] = pair
-            } else if let pair = windows[displayID] {
+                windows[key] = pair
+            } else if let pair = windows[key] {
                 // Hard tear-down: drop the MetalPatternView so no stale frame
                 // can be presented if the window comes back via a Space swap.
                 pair.0.contentView = nil
                 pair.0.orderOut(nil)
-                windows.removeValue(forKey: displayID)
+                windows.removeValue(forKey: key)
             }
         }
 
-        // Drop windows whose screens disappeared.
-        let live = Set(screens.compactMap { DisplayManager.displayID(for: $0) })
-        for id in windows.keys where !live.contains(id) {
-            windows[id]?.0.contentView = nil
-            windows[id]?.0.orderOut(nil)
-            windows.removeValue(forKey: id)
-        }
+        removeStaleWindows(keeping: liveKeys)
 
         isRenderingAny = !windows.isEmpty
     }
 
-    private func makeWindow(for screen: NSScreen, id: UInt32) -> (OverlayWindow, MetalPatternView) {
+    private func syncTargetedWindows(rule: AppRule, screens: [NSScreen]) {
+        let frames = WindowTargetProvider.visibleWindowFrames(
+            bundleIdentifier: rule.bundleIdentifier,
+            screens: screens
+        )
+
+        let appStrength = rule.strengthOverride
+        let appPattern = rule.patternOverride
+        var liveKeys = Set<String>()
+
+        for (index, frame) in frames.enumerated() {
+            guard let screen = screen(containing: frame, in: screens) else { continue }
+            let displayID = DisplayManager.displayID(for: screen) ?? 0
+            guard settings.settings(for: displayID)?.enabled ?? true else { continue }
+
+            let key = "target-\(index)"
+            liveKeys.insert(key)
+            let pair = windows[key] ?? makeWindow(for: screen)
+            pair.1.update(strength: appStrength ?? settings.strength,
+                          density: settings.density,
+                          pattern: appPattern ?? settings.pattern,
+                          localDimAlpha: settings.dimBrightness ? localDimAlpha : 0)
+            pair.0.setFrame(frame, display: true)
+            if !pair.0.isVisible {
+                pair.0.orderFrontRegardless()
+            }
+            windows[key] = pair
+        }
+
+        removeStaleWindows(keeping: liveKeys)
+        isRenderingAny = !windows.isEmpty
+    }
+
+    private func makeWindow(for screen: NSScreen) -> (OverlayWindow, MetalPatternView) {
         let window = OverlayWindow(screen: screen)
         // Metal is present on every Mac that runs macOS 13+. If initialization
         // fails it indicates a corrupted install; crashing with a clear message
@@ -224,5 +268,43 @@ final class OverlayController: ObservableObject {
         metal.autoresizingMask = [.width, .height]
         window.contentView = metal
         return (window, metal)
+    }
+
+    private func removeStaleWindows(keeping liveKeys: Set<String>) {
+        for key in windows.keys where !liveKeys.contains(key) {
+            windows[key]?.0.contentView = nil
+            windows[key]?.0.orderOut(nil)
+            windows.removeValue(forKey: key)
+        }
+    }
+
+    private func screen(containing rect: CGRect, in screens: [NSScreen]) -> NSScreen? {
+        screens.max { lhs, rhs in
+            lhs.frame.intersection(rect).area < rhs.frame.intersection(rect).area
+        }
+    }
+
+    private func startTargetedSyncTimer() {
+        guard targetedSyncTimer == nil else { return }
+        targetedSyncTimer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: true) { [weak self] _ in
+            self?.sync()
+        }
+        targetedSyncTimer?.tolerance = 0.10
+    }
+
+    private func stopTargetedSyncTimer() {
+        targetedSyncTimer?.invalidate()
+        targetedSyncTimer = nil
+    }
+
+    private var localDimAlpha: Double {
+        max(0.0, min(0.36, (1.0 - settings.dimTarget) * 0.32))
+    }
+}
+
+private extension CGRect {
+    var area: CGFloat {
+        guard !isNull, !isEmpty else { return 0 }
+        return width * height
     }
 }

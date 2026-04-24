@@ -25,6 +25,8 @@ struct PatternUniforms {
     var density: Float
     var mode: Int32
     var time: Float
+    var phaseSeed: Float
+    var localDimAlpha: Float
 }
 
 final class MetalPatternView: MTKView {
@@ -34,7 +36,9 @@ final class MetalPatternView: MTKView {
                                            strength: 0.7,
                                            density: 0.5,
                                            mode: 0,
-                                           time: 0)
+                                           time: 0,
+                                           phaseSeed: 0,
+                                           localDimAlpha: 0)
 
     static func make() -> MetalPatternView? {
         guard let device = MTLCreateSystemDefaultDevice() else { return nil }
@@ -94,10 +98,15 @@ final class MetalPatternView: MTKView {
 
     // MARK: Public updates
 
-    func update(strength: Double, density: Double, pattern: PatternMode) {
+    func update(strength: Double,
+                density: Double,
+                pattern: PatternMode,
+                localDimAlpha: Double = 0) {
         uniforms.strength = Float(strength)
         uniforms.density  = Float(density)
         uniforms.mode     = Int32(Self.modeIndex(pattern))
+        uniforms.phaseSeed = 17
+        uniforms.localDimAlpha = Float(max(0.0, min(0.55, localDimAlpha)))
         needsDisplay = true
     }
 

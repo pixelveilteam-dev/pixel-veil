@@ -83,4 +83,5 @@ enum PatternRenderer {
 
         return ctx.makeImage()
     }
+
 }

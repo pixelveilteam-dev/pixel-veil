@@ -58,9 +58,9 @@ struct PrivacyModeView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Force brightness down")
+                            Text("Brightness Assist")
                                 .font(.system(size: 13, weight: .semibold))
-                            Text("Lowers your display brightness while Privacy Mode is active and restores it when turned off.")
+                            Text("Drops brightness and compresses gamma while Privacy Mode is active.")
                                 .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -82,7 +82,7 @@ struct PrivacyModeView: View {
                                     .foregroundStyle(.secondary)
                             }
                             Slider(value: $settings.dimTarget, in: 0.05...0.80)
-                            Text("Lower values amplify the contrast-reduction effect but reduce head-on readability.")
+                            Text("20% is the default because it gives the mask enough contrast without fully blacking out the display.")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.secondary)
                         }
@@ -112,4 +112,5 @@ struct PrivacyModeView: View {
             Slider(value: value, in: 0.0...1.0)
         }
     }
+
 }

@@ -3,8 +3,7 @@
 //  Pixel Veil
 //
 //  The "home" dashboard. A two-column layout: the hero Privacy Mode card +
-//  pattern + live preview on the left, and a stack of compact utility cards
-//  (Displays, Global Hotkey, App Rules, Permissions) on the right.
+//  pattern controls on the left, and compact utility cards on the right.
 //
 
 import SwiftUI
@@ -174,11 +173,13 @@ struct OverviewView: View {
                         Spacer()
                     }
                 }
-                Button("Configure Displays…") {
-                    section = .displays
+                HStack(spacing: 5) {
+                    Text("Configure Displays")
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
                 }
-                .controlSize(.small)
-                .buttonStyle(.bordered)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.accentColor)
             }
         }
     }

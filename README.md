@@ -38,7 +38,7 @@ PixelVeil/
 ├── Core/
 │   ├── Settings/        Preferences model + UserDefaults-backed store
 │   ├── Overlay/         Metal view + transparent NSWindow + controller
-│   ├── Displays/        NSScreen tracking, CGDisplay reconfig callbacks
+│   ├── Displays/        NSScreen tracking, brightness + gamma assist
 │   ├── Hotkeys/         Carbon RegisterEventHotKey wrapper
 │   ├── Automation/      App-rule + schedule engines
 │   ├── Permissions/     Accessibility + Screen Recording status
@@ -48,7 +48,7 @@ PixelVeil/
 │   ├── Sections/        One view per sidebar section
 │   ├── Components/      Card, PatternPicker, LivePreview, HotkeyRecorder…
 │   └── MenuBar/         SwiftUI popover content
-├── Shaders/             PatternShaders.metal — the five pattern modes
+├── Shaders/             PatternShaders.metal — the pattern modes
 └── Resources/           Info.plist, Assets, entitlements
 ```
 
@@ -73,8 +73,8 @@ never silently overwritten.
 
 ## How the overlay works
 
-On each attached display, `OverlayController` creates one borderless
-`NSWindow` with:
+In full-display mode, `OverlayController` creates one borderless `NSWindow` on
+each attached display with:
 
 - `level = CGWindowLevelForKey(.screenSaverWindow)` — the highest layer an
   ordinary app can sit at. System UI (Control Center, screenshot toolbar) is
@@ -90,10 +90,22 @@ Each window's content view is a `MetalPatternView` (`MTKView`). It uses
 60 Hz — we only redraw when strength/density/pattern changes. Idle overhead is
 essentially zero.
 
-The fragment shader (`PatternShaders.metal`) generates all five patterns
+App rules can also target only the visible windows owned by a selected app. In
+that mode `WindowTargetProvider` reads WindowServer bounds with
+`CGWindowListCopyWindowInfo`, and the overlay creates smaller pass-through
+windows around those app windows instead of covering the whole display.
+
+The fragment shader (`PatternShaders.metal`) generates the mask patterns
 procedurally from screen-space pixel coordinates. No textures are bound, and
 each frame is a single full-screen triangle — a 5K display is sub-millisecond
 on any M-series Mac.
+
+Brightness support has two layers:
+
+- Full-display mode can nudge hardware brightness and apply a mild gamma assist
+  while Privacy Mode is active. The default brightness target is 20%.
+- App-window mode uses local shader dimming inside the targeted overlay
+  rectangles, because macOS brightness and gamma APIs are display-wide.
 
 ## Feasibility: software mask vs. hardware privacy
 
@@ -108,6 +120,8 @@ on Apple silicon. What this app does is:
   easy to see "through" because the brain integrates the gaps.
 - Offer adjustable density and strength so you can tune the privacy/readability
   trade-off for your panel.
+- Optionally limit Privacy Mode to chosen app windows, so sensitive apps can be
+  veiled without covering the entire desktop.
 
 This is genuinely useful in public spaces but is an *approximation*. The About
 section of the app states this plainly so users don't confuse the two.

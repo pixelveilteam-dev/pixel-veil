@@ -6,6 +6,29 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.3] — 2026-04-24
+
+### Added
+- App rules can now veil only the visible windows owned by the selected app,
+  instead of always covering the full display.
+- Targeted app-window veils include a local shader dim assist, so selected
+  windows can be darkened without changing system-wide display brightness.
+- Privacy Mode now applies a mild gamma assist in full-display mode alongside
+  the existing brightness assist, with the default brightness target set to
+  20%.
+- Pixel Veil now registers as a launch-at-login app by default.
+
+### Changed
+- Closing the main app window now hides Pixel Veil from the Dock while keeping
+  the menu bar item, hotkey, app rules, schedules, and overlay services alive.
+- Adaptive Text is now the default pattern and uses a calmer ordered pixel
+  mask for better readability head-on.
+- App-window targeting is tighter around the selected app's real window bounds.
+
+### Removed
+- Removed the experimental System Pixels/System Adaptive layout because it was
+  too visible and did not improve the privacy/readability trade-off.
+
 ## [1.0.2] — 2026-04-23
 
 ### Fixed

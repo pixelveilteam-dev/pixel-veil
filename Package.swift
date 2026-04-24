@@ -22,7 +22,8 @@ let package = Package(
                 "Shaders/PatternShaders.metal"
             ],
             linkerSettings: [
-                .linkedFramework("Carbon")
+                .linkedFramework("Carbon"),
+                .linkedFramework("ServiceManagement")
             ]
         )
     ]

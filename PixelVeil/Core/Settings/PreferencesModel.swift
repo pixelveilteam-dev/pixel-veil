@@ -36,6 +36,16 @@ enum PatternMode: String, Codable, CaseIterable, Identifiable {
         case .custom:          return "slider.horizontal.3"
         }
     }
+
+    init(from decoder: Decoder) throws {
+        let value = try decoder.singleValueContainer().decode(String.self)
+        self = PatternMode(rawValue: value) ?? .adaptiveText
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 }
 
 // Serialized hotkey specification. We store Carbon key/modifier codes because
@@ -69,10 +79,42 @@ struct AppRule: Codable, Identifiable, Equatable {
     var bundleIdentifier: String
     var displayName: String
     var action: AppRuleAction
+    // When true, an activate rule masks only visible windows owned by this app
+    // instead of veiling the whole display.
+    var limitToAppWindows: Bool = true
     // Optional per-rule overrides. Applied while this rule is the match for
     // the frontmost app AND its action is .activate.
     var strengthOverride: Double? = nil
     var patternOverride: PatternMode? = nil
+
+    init(id: UUID = UUID(),
+         bundleIdentifier: String,
+         displayName: String,
+         action: AppRuleAction,
+         limitToAppWindows: Bool = true,
+         strengthOverride: Double? = nil,
+         patternOverride: PatternMode? = nil) {
+        self.id = id
+        self.bundleIdentifier = bundleIdentifier
+        self.displayName = displayName
+        self.action = action
+        self.limitToAppWindows = limitToAppWindows
+        self.strengthOverride = strengthOverride
+        self.patternOverride = patternOverride
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID(),
+            bundleIdentifier: try c.decode(String.self, forKey: .bundleIdentifier),
+            displayName: try c.decode(String.self, forKey: .displayName),
+            action: try c.decode(AppRuleAction.self, forKey: .action),
+            limitToAppWindows: try c.decodeIfPresent(Bool.self, forKey: .limitToAppWindows) ?? true,
+            strengthOverride: try c.decodeIfPresent(Double.self, forKey: .strengthOverride),
+            patternOverride: try c.decodeIfPresent(PatternMode.self, forKey: .patternOverride)
+        )
+    }
 }
 
 struct ScheduleRule: Codable, Equatable {
@@ -105,9 +147,56 @@ struct Preferences: Codable, Equatable {
     // frontmost. If false, rules can temporarily override the master state.
     var appRulesRestrictive: Bool = false
 
-    // When true, Privacy Mode also forces the display brightness down to
-    // `dimTarget` (fraction of 0...1). The original brightness is restored
-    // when Privacy Mode deactivates or the app quits.
+    // When true, Privacy Mode also nudges brightness and gamma down. This is a
+    // mild assist to the Metal mask, not a blackout.
     var dimBrightness: Bool = true
     var dimTarget: Double = 0.20
+    var launchAtLogin: Bool = true
+
+    init(isEnabled: Bool = false,
+         strength: Double = 0.55,
+         density: Double = 0.6,
+         pattern: PatternMode = .adaptiveText,
+         customPatternBase64: String? = nil,
+         hotkey: HotkeySpec = .defaultHotkey,
+         displays: [DisplaySettings] = [],
+         appRules: [AppRule] = [],
+         schedule: ScheduleRule = ScheduleRule(),
+         appRulesRestrictive: Bool = false,
+         dimBrightness: Bool = true,
+         dimTarget: Double = 0.20,
+         launchAtLogin: Bool = true) {
+        self.isEnabled = isEnabled
+        self.strength = strength
+        self.density = density
+        self.pattern = pattern
+        self.customPatternBase64 = customPatternBase64
+        self.hotkey = hotkey
+        self.displays = displays
+        self.appRules = appRules
+        self.schedule = schedule
+        self.appRulesRestrictive = appRulesRestrictive
+        self.dimBrightness = dimBrightness
+        self.dimTarget = dimTarget
+        self.launchAtLogin = launchAtLogin
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            isEnabled: try c.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false,
+            strength: try c.decodeIfPresent(Double.self, forKey: .strength) ?? 0.55,
+            density: try c.decodeIfPresent(Double.self, forKey: .density) ?? 0.6,
+            pattern: try c.decodeIfPresent(PatternMode.self, forKey: .pattern) ?? .adaptiveText,
+            customPatternBase64: try c.decodeIfPresent(String.self, forKey: .customPatternBase64),
+            hotkey: try c.decodeIfPresent(HotkeySpec.self, forKey: .hotkey) ?? .defaultHotkey,
+            displays: try c.decodeIfPresent([DisplaySettings].self, forKey: .displays) ?? [],
+            appRules: try c.decodeIfPresent([AppRule].self, forKey: .appRules) ?? [],
+            schedule: try c.decodeIfPresent(ScheduleRule.self, forKey: .schedule) ?? ScheduleRule(),
+            appRulesRestrictive: try c.decodeIfPresent(Bool.self, forKey: .appRulesRestrictive) ?? false,
+            dimBrightness: try c.decodeIfPresent(Bool.self, forKey: .dimBrightness) ?? true,
+            dimTarget: try c.decodeIfPresent(Double.self, forKey: .dimTarget) ?? 0.20,
+            launchAtLogin: try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? true
+        )
+    }
 }

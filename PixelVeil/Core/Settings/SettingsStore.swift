@@ -26,6 +26,7 @@ final class SettingsStore: ObservableObject {
     @Published var appRulesRestrictive: Bool
     @Published var dimBrightness: Bool
     @Published var dimTarget: Double
+    @Published var launchAtLogin: Bool
 
     private var bag = Set<AnyCancellable>()
 
@@ -42,6 +43,7 @@ final class SettingsStore: ObservableObject {
         self.appRulesRestrictive  = loaded.appRulesRestrictive
         self.dimBrightness        = loaded.dimBrightness
         self.dimTarget            = loaded.dimTarget
+        self.launchAtLogin        = loaded.launchAtLogin
 
         // Persist whenever any of these changes (debounced).
         let saveTrigger = Publishers.MergeMany(
@@ -55,7 +57,8 @@ final class SettingsStore: ObservableObject {
             $schedule.map { _ in () }.eraseToAnyPublisher(),
             $appRulesRestrictive.map { _ in () }.eraseToAnyPublisher(),
             $dimBrightness.map { _ in () }.eraseToAnyPublisher(),
-            $dimTarget.map { _ in () }.eraseToAnyPublisher()
+            $dimTarget.map { _ in () }.eraseToAnyPublisher(),
+            $launchAtLogin.map { _ in () }.eraseToAnyPublisher()
         )
         saveTrigger
             .debounce(for: .milliseconds(200), scheduler: DispatchQueue.main)
@@ -75,7 +78,8 @@ final class SettingsStore: ObservableObject {
             schedule: schedule,
             appRulesRestrictive: appRulesRestrictive,
             dimBrightness: dimBrightness,
-            dimTarget: dimTarget
+            dimTarget: dimTarget,
+            launchAtLogin: launchAtLogin
         )
     }
 
@@ -88,15 +92,25 @@ final class SettingsStore: ObservableObject {
         else { return Preferences() }
 
         // Migration v1: earlier builds defaulted pattern to .verticalStripes.
-        // Adaptive Text is a better default now that the shader uses a
-        // contrast-reduction base for all modes; bump existing users exactly
-        // once so the new default actually lands for them.
+        // Adaptive Text was a better default once the shader used a
+        // contrast-reduction base for all modes.
         let migratedKey = "com.pixelveil.migrated.v1"
         if !UserDefaults.standard.bool(forKey: migratedKey) {
             if prefs.pattern == .verticalStripes {
                 prefs.pattern = .adaptiveText
             }
             UserDefaults.standard.set(true, forKey: migratedKey)
+        }
+
+        // Migration v2: System Adaptive was removed from the user-facing
+        // product after testing showed the mask was too visible. Unknown
+        // persisted enum values decode to Adaptive Text, and this restores the
+        // brightness assist default that worked best in practice.
+        let restoreAdaptiveTextKey = "com.pixelveil.migrated.restoreAdaptiveText.v2"
+        if !UserDefaults.standard.bool(forKey: restoreAdaptiveTextKey) {
+            prefs.pattern = .adaptiveText
+            prefs.dimTarget = 0.20
+            UserDefaults.standard.set(true, forKey: restoreAdaptiveTextKey)
         }
         return prefs
     }

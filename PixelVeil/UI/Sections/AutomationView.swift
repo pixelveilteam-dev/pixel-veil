@@ -127,6 +127,17 @@ struct AutomationView: View {
             }
         )
         return VStack(alignment: .leading, spacing: 6) {
+            Toggle("Only cover this app's windows", isOn: Binding(
+                get: { rule.wrappedValue.limitToAppWindows },
+                set: { on in
+                    var r = rule.wrappedValue
+                    r.limitToAppWindows = on
+                    rule.wrappedValue = r
+                }
+            ))
+            .toggleStyle(.checkbox)
+            .font(.system(size: 12))
+
             HStack(spacing: 10) {
                 Toggle("Custom strength", isOn: useStrength)
                     .toggleStyle(.checkbox)
